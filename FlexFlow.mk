@@ -117,10 +117,10 @@ CC_FLAGS	+= -DFF_USE_AVX2 -mavx2
 endif
 
 #ifndef HDF5
-#HDF5_inc	?= /usr/include/hdf5/serial
-#HDF5_lib	?= /usr/lib/x86_64-linux-gnu/hdf5/serial
-#INC_FLAGS	+= -I${HDF5}/
-#LD_FLAGS	+= -L${HDF5_lib} -lhdf5
+HDF5_inc	?= /usr/include/hdf5/serial
+HDF5_lib	?= /usr/lib/x86_64-linux-gnu/hdf5/serial
+INC_FLAGS	+= -I${HDF5}/
+LD_FLAGS	+= -L${HDF5_lib} -lhdf5
 #endif
 
 ###########################################################################
