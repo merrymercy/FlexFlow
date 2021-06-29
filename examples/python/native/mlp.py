@@ -1,4 +1,6 @@
 import argparse
+import os
+import pickle
 import time
 
 import numpy as np
@@ -15,62 +17,68 @@ def top_level_task():
 
     batch_size = ffconfig.batch_size
     seq_len = 1
-    hidden_dim = 2304
-    num_layers = 4
+    hidden_size = args.hidden_size
+    num_layers = args.num_layers
 
-    input_tensor = ffmodel.create_tensor([batch_size * seq_len, hidden_dim], DataType.DT_FLOAT)
+    input_tensor = ffmodel.create_tensor([batch_size * seq_len, hidden_size], DataType.DT_FLOAT)
     t = input_tensor
 
     for i in range(num_layers):
-        t = ffmodel.dense(t, hidden_dim * 4)
-        t = ffmodel.dense(t, hidden_dim)
+        t = ffmodel.dense(t, hidden_size * 4)
+        t = ffmodel.dense(t, hidden_size)
 
     optimizer = SGDOptimizer(ffmodel, 0.001)
     ffmodel.optimizer = optimizer
     ffmodel.compile(loss_type=LossType.LOSS_MEAN_SQUARED_ERROR_AVG_REDUCE,
                     metrics=[], comp_mode=CompMode.TRAINING)
-    ffmodel.init_layers()
 
+    # Data loader
     num_samples = batch_size * 10
-    x_train = np.random.randn(num_samples * seq_len, hidden_dim).astype("float32")
-    y_train = np.random.randn(num_samples * seq_len, hidden_dim).astype("float32")
-
+    x_train = np.random.randn(num_samples * seq_len, hidden_size).astype("float32")
+    y_train = np.random.randn(num_samples * seq_len, hidden_size).astype("float32")
     label_tensor = ffmodel.label_tensor
     dataloader_input = ffmodel.create_data_loader(input_tensor, x_train)
     dataloader_label = ffmodel.create_data_loader(label_tensor, y_train)
-
     dataloader_input.reset()
     dataloader_input.next_batch(ffmodel)
     dataloader_label.reset()
     dataloader_label.next_batch(ffmodel)
 
-    def batch():
+    ffmodel.init_layers()
+
+    def one_batch():
         ffmodel.forward()
         ffmodel.zero_gradients()
         ffmodel.backward()
         ffmodel.update()
 
     warmup = 2
-    number = 10
+    repeat = 3
+    number = 5
 
-    # warmup
+    # Warmup
     for i in range(warmup):
-        batch()
+        one_batch()
 
-    # benchmark
-    ts_start = ffconfig.get_current_time()
-    for i in range(number):
-        batch()
-    ts_end = ffconfig.get_current_time()
+    # Benchmark
+    costs = []
+    for i in range(repeat):
+        ts_start = ffconfig.get_current_time()
+        for j in range(number):
+            one_batch()
+        ts_end = ffconfig.get_current_time()
+        run_time = 1e-6 * (ts_end - ts_start) / number
+
+        costs.append(run_time)
 
     # Log results
-    run_time = 1e-6 * (ts_end - ts_start) / number
-    print(f"Time: {run_time:.3f}")
+    pickle.dump((costs,), open("tmp.pkl", "wb"))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--hidden-size", type=int)
+    parser.add_argument("--num-layers", type=int)
     args, unknown = parser.parse_known_args()
     top_level_task()
-    print("")
 
