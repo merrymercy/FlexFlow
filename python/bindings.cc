@@ -218,7 +218,9 @@ PYBIND11_MODULE(flexflow_pybind11_internal, m) {
 
   py::enum_<ActiMode>(m, "ActiMode")
       .value("AC_MODE_NONE", ActiMode::AC_MODE_NONE)
-      .value("AC_MODE_RELU", ActiMode::AC_MODE_RELU);
+      .value("AC_MODE_RELU", ActiMode::AC_MODE_RELU)
+      .value("AC_MODE_SIGMOID", ActiMode::AC_MODE_SIGMOID)
+      .value("AC_MODE_GELU", ActiMode::AC_MODE_GELU);
   
   py::enum_<CompMode>(m, "CompMode")
       .value("TRAINING", CompMode::COMP_MODE_TRAINING)

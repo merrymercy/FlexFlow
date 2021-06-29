@@ -10,6 +10,18 @@ def run_cmd(cmd):
     os.system(cmd)
 
 
+def write_tsv(heads, values, filename, print_line=True):
+    """Write tsv data to a file."""
+    with open(filename, "a") as fout:
+        fout.write("\t".join(values) + "\n")
+
+    if print_line:
+        line = ""
+        for i in range(len(heads)):
+            line += heads[i] + ": " + values[i] + "  "
+        print(line)
+
+
 def benchmark_mlp_one_case(case):
     batch_size, seq_len, hidden_size, num_layers = case[:4]
     strategy = case[4]
@@ -38,12 +50,7 @@ def benchmark_mlp_one_case(case):
     heads = ["Type", "Case", "Strategy", "Mean Time", "Std Time"]
     values = ["mlp", str(case[:4]), strategy,
              f"{np.mean(costs):.4f}", f"{np.std(costs):.4f}"]
-    line = ""
-    for i in range(len(heads)):
-        line += heads[i] + ": " + values[i] + "  "
-    print(line)
-    with open("result_mlp.tsv", "a") as fout:
-        fout.write("\t".join(values) + "\n")
+    write_tsv(heads, values, "result_mlp.tsv")
 
 
 benchmark_mlp_suite = [
