@@ -16,16 +16,18 @@ def top_level_task():
     ffmodel = FFModel(ffconfig)
 
     batch_size = ffconfig.batch_size
-    seq_len = 1
+    seq_len = args.seq_len
     hidden_size = args.hidden_size
     num_layers = args.num_layers
 
     input_tensor = ffmodel.create_tensor([batch_size * seq_len, hidden_size], DataType.DT_FLOAT)
-    t = input_tensor
 
+    #t = ffmodel.reshape(input_tensor, (batch_size * seq_len, hidden_size))
+    t = input_tensor
     for i in range(num_layers):
         t = ffmodel.dense(t, hidden_size * 4)
         t = ffmodel.dense(t, hidden_size)
+    #t = ffmodel.reshape(t, (batch_size, seq_len, hidden_size))
 
     optimizer = SGDOptimizer(ffmodel, 0.001)
     ffmodel.optimizer = optimizer
@@ -33,7 +35,7 @@ def top_level_task():
                     metrics=[], comp_mode=CompMode.TRAINING)
 
     # Data loader
-    num_samples = batch_size * 10
+    num_samples = batch_size * 4
     x_train = np.random.randn(num_samples * seq_len, hidden_size).astype("float32")
     y_train = np.random.randn(num_samples * seq_len, hidden_size).astype("float32")
     label_tensor = ffmodel.label_tensor
@@ -47,10 +49,12 @@ def top_level_task():
     ffmodel.init_layers()
 
     def one_batch():
+        #ffconfig.begin_trace(200)
         ffmodel.forward()
         ffmodel.zero_gradients()
         ffmodel.backward()
         ffmodel.update()
+        #ffconfig.end_trace(200)
 
     warmup = 2
     repeat = 3
@@ -77,6 +81,7 @@ def top_level_task():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--seq-len", type=int)
     parser.add_argument("--hidden-size", type=int)
     parser.add_argument("--num-layers", type=int)
     args, unknown = parser.parse_known_args()
